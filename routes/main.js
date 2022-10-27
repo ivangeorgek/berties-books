@@ -122,24 +122,55 @@ module.exports = function(app, shopData) {
 
         //Database query to find hash for the corresponding username
         let sqlquery = `SELECT hashedPassword FROM users WHERE username="${req.body.username}"`
-        db.query (sqlquery, (queryErr, queryResult) => {
-            if (queryErr) {
-                res.redirect('./');
-                console.error(queryErr);
+        db.query (sqlquery, (queryErr, queryResult) => { 
+            //If username does not exist - database returns an empty array
+            if (queryResult.length == 0) {
+                res.send("Username does not exist")
             }
-            hash = queryResult[0].hashedPassword //Extracting hash from hashedPassword
-            bcrypt.compare(plainPassword, hash, function(bcryptErr, result) {
-                if (bcryptErr) {
-                    res.redirect('./');
-                    console.error(bcryptErr);
-                }
-                else if (result) { //Password matched : result == true
-                    res.send("You are logged in")
-                }
-                else {
-                    res.send("The password you entered is wrong");
-                }
-            });                                                                 
+            else {
+                //Extracting hash from sql query result data structure
+                hash = queryResult[0].hashedPassword 
+                //Comparing the entered password with hashed value using bcrypt
+                bcrypt.compare(plainPassword, hash, function(bcryptErr, result) {
+                    if (bcryptErr) {
+                        res.redirect('./');
+                        console.error(bcryptErr);
+                    }
+                    else if (result) { //Password matched : result == true
+                        res.send("You are now logged in")
+                    }
+                    else {
+                        res.send("The password you entered is wrong");
+                    }
+                });  
+            }                                                    
         }); 
+    })
+
+    app.get("/deleteusers", (req, res) => {
+        res.render('deleteusers.ejs', shopData);
+    })
+
+    app.post("/deleteduser", (req, res) => {
+        //SQL query to check if user exists
+        let sqlquery = `SELECT * FROM users WHERE username="${req.body.username}"`
+        db.query (sqlquery, (queryErr, queryResult) => { 
+            //If username does not exist - database returns an empty array
+            if (queryResult.length == 0) {
+                res.send("Username does not exist")
+            }
+            else {
+                //SQL query to delete the corresponding user
+                sqlquery = `DELETE FROM users WHERE username="${req.body.username}"`
+                db.query (sqlquery, (queryErr, queryResult) => { 
+                    if (queryErr) {
+                        res.redirect('./')
+                    }
+                    let message = `${req.body.username} has been deleted from the list` 
+                    res.send(message)                                                 
+                });
+            }
+        })
+
     })
 }

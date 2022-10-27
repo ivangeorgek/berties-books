@@ -9,17 +9,14 @@
     <h2>Here are the users that are registered with us: </h2>
     <table>
       <tr>
-        <th>Name</th>
         <th>Username</th>
-        <th>Email</th>
       </tr>
       <% availableUsers.forEach(function(user) { %>
         <tr>
-          <td><%= user.first_name %> <%= user.last_name %></td>
           <td><%= user.username %></td>
-          <td><%= user.email %></td>
         </tr>
       <% }) %>
     </table>
+    <p><a href="./">Back to home</a></p>
   </body>
 </html>
