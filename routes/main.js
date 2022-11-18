@@ -27,8 +27,9 @@ module.exports = function (app, shopData) {
             .withMessage("keyword should not be empty")
     ],
         function (req, res) {
+            const valErrors = validationResult(req);
             if (!valErrors.isEmpty()) {
-                res.redirect('./register');
+                res.redirect('./search');
             }
             else {
                 //searching in the database
@@ -189,38 +190,54 @@ module.exports = function (app, shopData) {
         res.render('login.ejs', shopData);
     });
 
-    app.post('/loggedin', function (req, res) {
-        const bcrypt = require('bcrypt');
-        const plainPassword = req.sanitize(req.body.password);
-        let hash = ""; //Stores the retrieved hashed password from database
-
-        //Database query to find hash for the corresponding username
-        let sqlquery = `SELECT hashedPassword FROM users WHERE username="${req.sanitize(req.body.username)}"`
-        db.query(sqlquery, (queryErr, queryResult) => {
-            //If username does not exist - database returns an empty array
-            if (queryResult.length == 0) {
-                res.send("Username does not exist")
+    app.post('/loggedin', [
+        check('password')
+            .isLength({ min: 8 })
+            .withMessage("Password should be 8 characters"),
+        check('username')
+            .notEmpty()
+            .withMessage("username cannot be left empty")
+            .isAlphanumeric()
+            .withMessage("username should be letters or numbers")],
+        function (req, res) {
+            const valErrors = validationResult(req);
+            console.log(valErrors)
+            if (!valErrors.isEmpty()) {
+                res.redirect('./register');
             }
             else {
-                //Extracting hash from sql query result data structure
-                hash = queryResult[0].hashedPassword
-                //Comparing the entered password with hashed value using bcrypt
-                bcrypt.compare(plainPassword, hash, function (bcryptErr, result) {
-                    if (bcryptErr) {
-                        res.redirect('./');
-                        console.error(bcryptErr);
-                    }
-                    else if (result) { //Password matched : result == true
-                        req.session.userId = req.body.username;
-                        res.send("You are now logged in. <a href=./>Home</a>")
+                const bcrypt = require('bcrypt');
+                const plainPassword = req.sanitize(req.body.password);
+                let hash = ""; //Stores the retrieved hashed password from database
+
+                //Database query to find hash for the corresponding username
+                let sqlquery = `SELECT hashedPassword FROM users WHERE username="${req.sanitize(req.body.username)}"`
+                db.query(sqlquery, (queryErr, queryResult) => {
+                    //If username does not exist - database returns an empty array
+                    if (queryResult.length == 0) {
+                        res.send("Username does not exist")
                     }
                     else {
-                        res.send("The password you entered is wrong");
+                        //Extracting hash from sql query result data structure
+                        hash = queryResult[0].hashedPassword
+                        //Comparing the entered password with hashed value using bcrypt
+                        bcrypt.compare(plainPassword, hash, function (bcryptErr, result) {
+                            if (bcryptErr) {
+                                res.redirect('./');
+                                console.error(bcryptErr);
+                            }
+                            else if (result) { //Password matched : result == true
+                                req.session.userId = req.sanitize(req.body.username);
+                                res.send("You are now logged in. <a href=./>Home</a>")
+                            }
+                            else {
+                                res.send("The password you entered is wrong");
+                            }
+                        });
                     }
                 });
             }
-        });
-    })
+        })
 
     app.get('/logout', redirectLogin, (req, res) => {
         req.session.destroy(err => {
@@ -257,12 +274,12 @@ module.exports = function (app, shopData) {
                 }
                 else {
                     //SQL query to delete the corresponding user
-                    sqlquery = `DELETE FROM users WHERE username="${req.body.username}"`
+                    sqlquery = `DELETE FROM users WHERE username="${req.sanitize(req.body.username)}"`
                     db.query(sqlquery, (queryErr, queryResult) => {
                         if (queryErr) {
                             res.redirect('./')
                         }
-                        let message = `${req.body.username} has been deleted from the list`
+                        let message = `${req.sanitize(req.body.username)} has been deleted from the list`
                         res.send(message)
                     });
                 }
