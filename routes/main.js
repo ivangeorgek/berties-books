@@ -281,9 +281,122 @@ module.exports = function (app, shopData) {
                         }
                         let message = `${req.sanitize(req.body.username)} has been deleted from the list`
                         res.send(message)
-                    });
+                    }); ``
                 }
             })
         }
+    })
+
+
+    app.get('/api', function (req, res) {
+        // Query database to get all the books
+        let search_keyword = req.query.keyword;
+        console.log(search_keyword);
+        // If user provides a valid keyword 
+        if (search_keyword !== undefined) {
+            let sqlquery = "SELECT * FROM books WHERE name LIKE '%" + search_keyword + "%'";
+            // execute sql query
+            db.query(sqlquery, (err, result) => {
+                if (err) {
+                    res.redirect('./');
+                }
+                let newData = Object.assign({}, shopData, { availableBooks: result });
+                console.log(newData)
+                res.render("list.ejs", newData)
+            });
+        }
+        else {
+            //No keyword provided - JSON result of the books
+            let sqlquery = "SELECT * FROM books";
+            // Execute the sql query
+            db.query(sqlquery, (err, result) => {
+                if (err) {
+                    res.redirect('./');
+                }
+                // Return results as a JSON object
+                res.json(result);
+            });
+        }
+    });
+
+
+    app.get("/weather", (req, res) => {
+        res.render("weather.ejs", shopData)
+    })
+
+    app.get("/get-weather", (req, res) => {
+        const request = require('request');
+        let apiKey = '206cb769eb7b09cc0308792dddb8c809';
+        let city = req.sanitize(req.query.keyword);
+        let css_link = '<link rel="stylesheet"  type="text/css" href="main.css" />'
+        let home_link = '<br><p><a href="./">Back to home</a></p>'
+        let url =
+            `http://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${apiKey}`
+        request(url, function (err, response, body) {
+            if (err) {
+                console.log('error:', error);
+            } else {
+                var weather = JSON.parse(body);
+                console.log(weather);
+                // If API provides a valid result 
+                if (weather !== undefined && weather.main !== undefined) {
+                    //Print out city name, weather, humidity, feels like, max temp and main temp
+                    var wmsg =
+                        `It is ${weather.main.temp} degrees in ${weather.name} 
+                        <br>The humidity now is: ${weather.main.humidity}
+                        <br>The temperature feels like ${weather.main.feels_like}
+                        <br>The minimum temperature is ${weather.main.temp_min}
+                        <br>The maximum temperature is ${weather.main.temp_max}`
+                    res.send(css_link + wmsg + home_link)
+                }
+                // Error handling - bad response from API
+                else {
+                    res.send(css_link + "No data found" + home_link);
+                }
+            }
+        });
+    })
+
+    app.get("/tvshow", (req, res) => {
+        res.render("tvshow.ejs", shopData)
+    })
+
+    app.get("/get-tvshow", (req, res) => {
+        const request = require('request');
+        const keyword = req.sanitize(req.query.keyword);
+        // Keyword search for similar TV shows
+        let url =
+            `https://api.tvmaze.com/search/shows?q=${keyword}`
+        request(url, function (err, response, body) {
+            if (err) {
+                console.log('error:', error);
+            } else {
+                let shows = JSON.parse(body);
+
+                let css_link = '<link rel="stylesheet"  type="text/css" href="main.css" />'
+                let home_link = '<br><p><a href="./">Back to home</a></p>'
+
+                // If API does provide a result
+                if (shows !== undefined && shows.notEmpty) {
+                    let title = '<h1>TV show results with similar name:</h1>'
+                    let result = ''
+                    // Loop through shows array and render HTML elements using that data
+                    shows.forEach(element => {
+                        console.log(element.show.image)
+                        result += `
+                        <h2>${element.show.name}</h2>
+                        ${element.show.summary}
+                        Language : ${element.show.language}
+                        <br>Type : ${element.show.type}
+                        <hr class="rounded">`
+                    });
+                    res.send(title + css_link + result + home_link)
+                }
+                // Error Handling - bad response from API
+                else {
+                    res.send(css_link + "No data found" + home_link);
+                }
+            }
+        });
     })
 }

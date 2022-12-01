@@ -15,7 +15,7 @@ p,li {
 }
 
 table {
-  width: 50%;
+  width: 500px;
   text-align: center;
 }
 
@@ -55,5 +55,10 @@ a:active {
   color: blue;
   text-decoration: none;
   padding:5px;
+}
+
+hr.rounded {
+  border-top: 8px solid #bbb;
+  border-radius: 5px;
 }
 
