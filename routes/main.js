@@ -377,7 +377,7 @@ module.exports = function (app, shopData) {
                 let home_link = '<br><p><a href="./">Back to home</a></p>'
 
                 // If API does provide a result
-                if (shows !== undefined && shows.notEmpty) {
+                if (shows !== undefined || shows.notEmpty) {
                     let title = '<h1>TV show results with similar name:</h1>'
                     let result = ''
                     // Loop through shows array and render HTML elements using that data
